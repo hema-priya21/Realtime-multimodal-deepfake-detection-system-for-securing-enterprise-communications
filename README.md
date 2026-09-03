@@ -46,3 +46,28 @@ This repository implements a lightweight, low-latency framework that operates on
    ┌──────────────────────┐      ┌──────────────────────────┤
    │ Live Audio Stream    ├─────►│ Mel-Spectrogram / Librosa├─────┘
    └──────────────────────┘      └──────────────────────────┘
+Directory Structure
+Realtime-multimodal-deepfake-detection-system-for-securing-enterprise-communications/
+├── data/                       # Local dataset directory (Git-ignored)
+│   └── visual/
+│       ├── train/              # Training set (real / fake)
+│       └── val/                # Validation set (real / fake)
+├── phase1_ingestion/           # WebRTC stream ingestion & buffer management
+│   ├── buffer_manager.py
+│   └── main_ingest.py
+├── phase2_visual/              # Visual model training & spatial inference
+│   ├── face_detector.py
+│   ├── train_visual.py
+│   ├── visual_analyzer.py
+│   └── visual_model.pth        # Trained weights (Git-ignored)
+├── phase3_audio/               # Audio spectral analysis & prosody extraction
+│   ├── audio_analyzer.py
+│   └── main_audio.py
+├── phase4_fusion_alerting/     # Multimodal fusion & alert engine
+│   ├── fusion_engine.py
+│   ├── main_fusion.py
+│   └── split_real_dataset.py
+├── shared/                     # Utilities & configuration schemas
+├── .gitignore                  # Exclusion rules for models, envs, and datasets
+├── README.md
+└── requirements.txt
