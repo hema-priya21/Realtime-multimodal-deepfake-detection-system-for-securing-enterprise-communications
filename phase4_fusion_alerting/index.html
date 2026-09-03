@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Enterprise Zero-Trust Secure Call</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; display: flex; gap: 20px; height: 100vh; }
+        .video-container { flex: 3; background: #1e293b; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .video-container img { width: 100%; max-width: 850px; border-radius: 8px; border: 2px solid #334155; }
+        .sidebar { flex: 1; background: #1e293b; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        .card { background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; }
+        .score-box { font-size: 28px; font-weight: bold; margin-top: 5px; }
+        .status-badge { padding: 6px 12px; border-radius: 20px; font-weight: bold; display: inline-block; }
+        .CRITICAL { background: #ef4444; color: white; }
+        .SAFE { background: #22c55e; color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="video-container">
+        <h2>Enterprise WebRTC Meeting Stream</h2>
+        <img id="videoFeed" src="" alt="Connecting stream...">
+    </div>
+
+    <div class="sidebar">
+        <h3>Zero-Trust Security Engine</h3>
+        
+        <div class="card">
+            <div>Status Alert</div>
+            <div id="alertBadge" class="status-badge SAFE">INITIALIZING</div>
+        </div>
+
+        <div class="card">
+            <div>Fused Threat Score (S_fusion)</div>
+            <div id="fusionScore" class="score-box">0.00</div>
+        </div>
+
+        <div class="card">
+            <div>Visual Risk Score (S_v)</div>
+            <div id="vScore">0.00</div>
+        </div>
+
+        <div class="card">
+            <div>Audio Risk Score (S_a)</div>
+            <div id="aScore">0.00</div>
+        </div>
+    </div>
+
+    <script>
+        const ws = new WebSocket("ws://" + location.host + "/ws/stream");
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            document.getElementById("videoFeed").src = data.frame;
+            document.getElementById("fusionScore").innerText = data.s_fusion;
+            document.getElementById("vScore").innerText = data.s_v;
+            document.getElementById("aScore").innerText = data.s_a;
+
+            const badge = document.getElementById("alertBadge");
+            badge.innerText = data.alert;
+            badge.className = "status-badge " + (data.alert === "CRITICAL" ? "CRITICAL" : "SAFE");
+        };
+    </script>
+</body>
+</html>
