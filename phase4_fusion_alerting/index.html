@@ -5,60 +5,347 @@
     <title>Enterprise Zero-Trust Secure Call</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; display: flex; gap: 20px; height: 100vh; }
-        .video-container { flex: 3; background: #1e293b; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .video-container img { width: 100%; max-width: 850px; border-radius: 8px; border: 2px solid #334155; }
-        .sidebar { flex: 1; background: #1e293b; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-        .card { background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; }
-        .score-box { font-size: 28px; font-weight: bold; margin-top: 5px; }
-        .status-badge { padding: 6px 12px; border-radius: 20px; font-weight: bold; display: inline-block; }
-        .CRITICAL { background: #ef4444; color: white; }
-        .SAFE { background: #22c55e; color: white; }
+        body { background-color: #0b1120; color: #f8fafc; margin: 0; padding: 18px; }
+
+        .topbar {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #111a2e; border: 1px solid #1f2b45; border-radius: 10px;
+            padding: 12px 18px; margin-bottom: 16px;
+        }
+        .topbar h1 { font-size: 16px; margin: 0; letter-spacing: 0.03em; color: #e2e8f0; }
+        .topbar .subtitle { font-size: 11px; color: #64748b; margin-top: 2px; }
+        .stream-pill {
+            display: flex; align-items: center; gap: 8px;
+            background: #0f2417; border: 1px solid #16532f; color: #4ade80;
+            padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+            letter-spacing: 0.04em;
+        }
+        .stream-pill.offline { background: #241414; border-color: #532020; color: #f87171; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; animation: pulse 1.4s infinite; }
+        .stream-pill.offline .dot { background: #f87171; animation: none; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+        .clock { font-size: 12px; color: #94a3b8; font-variant-numeric: tabular-nums; }
+
+        .layout { display: flex; gap: 16px; align-items: flex-start; }
+
+        .video-container {
+            flex: 3; background: #111a2e; border: 1px solid #1f2b45; border-radius: 12px;
+            padding: 14px; display: flex; flex-direction: column; align-items: center;
+        }
+        .video-container h2 { font-size: 13px; font-weight: 600; color: #94a3b8; margin: 0 0 10px 0; letter-spacing: 0.03em; text-transform: uppercase; }
+        .video-frame-wrap { position: relative; width: 100%; max-width: 900px; line-height: 0; }
+        .video-frame-wrap img { width: 100%; max-width: 900px; border-radius: 8px; border: 1px solid #1f2b45; background: #05070d; min-height: 300px; display: block; }
+        /* Face box: purely positional (from bbox) + coloured/labelled from
+           the SAME `status` the Security Decision badge uses -- see
+           web_app.py FaceBoxTracker. No independent classification here. */
+        .face-box { position: absolute; border: 2px solid transparent; border-radius: 2px; pointer-events: none; display: none; box-sizing: border-box; }
+        .face-box.holding { border-style: dashed; opacity: 0.7; }
+        .face-box .face-box-label {
+            position: absolute; left: -2px; top: -24px; font-weight: 700; font-size: 14px;
+            white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.9);
+        }
+        .face-box.CRITICAL, .face-box.CRITICAL .face-box-label { border-color: #ef4444; color: #ef4444; }
+        .face-box.SUSPICIOUS, .face-box.SUSPICIOUS .face-box-label { border-color: #f59e0b; color: #f59e0b; }
+        .face-box.NORMAL, .face-box.NORMAL .face-box-label { border-color: #22c55e; color: #22c55e; }
+        .face-box.ANALYZING, .face-box.ANALYZING .face-box-label { border-color: #38bdf8; color: #38bdf8; }
+        .no-face-caption {
+            position: absolute; left: 12px; top: 12px; color: #fde047; font-weight: 700;
+            font-size: 15px; text-shadow: 0 1px 3px rgba(0,0,0,0.9); display: none;
+        }
+        .modality-strip { display: flex; gap: 10px; margin-top: 12px; width: 100%; max-width: 900px; }
+        .modality-tag {
+            flex: 1; text-align: center; font-size: 11px; padding: 6px 8px; border-radius: 6px;
+            background: #0b1120; border: 1px solid #1f2b45; color: #64748b;
+        }
+        .modality-tag.on { color: #4ade80; border-color: #16532f; }
+        .modality-tag.off { color: #f87171; border-color: #532020; }
+
+        .info-hint {
+            font-size: 10.5px; color: #64748b; font-style: italic; line-height: 1.4;
+            margin-top: 10px; width: 100%; max-width: 900px;
+        }
+
+        .sidebar { flex: 2; display: flex; flex-direction: column; gap: 14px; }
+
+        .panel { background: #111a2e; border: 1px solid #1f2b45; border-radius: 12px; padding: 16px; }
+        .panel h3 {
+            font-size: 11px; font-weight: 700; color: #64748b; margin: 0 0 12px 0;
+            letter-spacing: 0.08em; text-transform: uppercase;
+        }
+
+        .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; font-size: 12.5px; }
+        .live-row { display: flex; justify-content: space-between; align-items: center; color: #94a3b8; }
+        .live-row .val { color: #e2e8f0; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .live-row .val.yes { color: #4ade80; }
+        .live-row .val.no { color: #f87171; }
+
+        .gauge { margin-bottom: 14px; }
+        .gauge:last-child { margin-bottom: 0; }
+        .gauge-label { display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; margin-bottom: 6px; }
+        .gauge-label .pct { color: #e2e8f0; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .gauge-label .stale-tag { color: #fbbf24; font-weight: 600; font-size: 10.5px; margin-left: 6px; }
+        .gauge-track { height: 10px; background: #0b1120; border-radius: 5px; overflow: hidden; border: 1px solid #1f2b45; }
+        .gauge-fill { height: 100%; border-radius: 5px; transition: width 0.15s ease-out, background 0.3s; width: 0%; background: #4ade80; }
+
+        .status-card { text-align: center; padding: 18px 16px; }
+        .status-badge {
+            display: inline-block; padding: 8px 22px; border-radius: 22px; font-weight: 800;
+            font-size: 15px; letter-spacing: 0.05em; margin-bottom: 12px;
+        }
+        .status-badge.CRITICAL { background: #3f1414; color: #fca5a5; border: 1px solid #7f1d1d; }
+        .status-badge.SUSPICIOUS { background: #3f2c0d; color: #fcd34d; border: 1px solid #78350f; }
+        .status-badge.NORMAL { background: #0f2417; color: #86efac; border: 1px solid #14532d; }
+        .status-badge.ANALYZING { background: #0f1f3f; color: #93c5fd; border: 1px solid #1e3a8a; }
+        .status-badge.NOSIGNAL { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+        .evidence-list { text-align: left; list-style: none; padding: 0; margin: 4px 0 0 0; }
+        .evidence-list li {
+            font-size: 12px; color: #cbd5e1; padding: 6px 0 6px 16px; position: relative;
+            border-top: 1px solid #1f2b45;
+        }
+        .evidence-list li:first-child { border-top: none; }
+        .evidence-list li::before { content: "\2013"; position: absolute; left: 0; color: #475569; }
+
+        .timeline { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column-reverse; gap: 6px; }
+        .timeline-entry { font-size: 11.5px; color: #94a3b8; padding: 6px 8px; border-radius: 6px; background: #0b1120; border: 1px solid #1f2b45; }
+        .timeline-entry .t-time { color: #64748b; font-variant-numeric: tabular-nums; margin-right: 8px; }
+        .timeline-empty { font-size: 12px; color: #475569; padding: 6px 0; }
     </style>
 </head>
 <body>
 
-    <div class="video-container">
-        <h2>Enterprise WebRTC Meeting Stream</h2>
-        <img id="videoFeed" src="" alt="Connecting stream...">
+    <div class="topbar">
+        <div>
+            <h1>ZERO-TRUST SECURITY ENGINE</h1>
+            <div class="subtitle">Realtime multimodal deepfake detection &middot; enterprise communications monitoring</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:16px;">
+            <span class="clock" id="clock">--</span>
+            <div class="stream-pill offline" id="streamPill"><span class="dot"></span><span id="streamPillText">CONNECTING</span></div>
+        </div>
     </div>
 
-    <div class="sidebar">
-        <h3>Zero-Trust Security Engine</h3>
-        
-        <div class="card">
-            <div>Status Alert</div>
-            <div id="alertBadge" class="status-badge SAFE">INITIALIZING</div>
+    <div class="layout">
+        <div class="video-container">
+            <h2>Live Video &middot; Enterprise WebRTC Meeting Stream</h2>
+            <div class="video-frame-wrap">
+                <img id="videoFeed" src="" alt="Connecting stream...">
+                <div class="face-box" id="faceBox"><span class="face-box-label" id="faceBoxLabel"></span></div>
+                <div class="no-face-caption" id="noFaceCaption">NO FACE</div>
+            </div>
+            <div class="modality-strip">
+                <div class="modality-tag" id="faceTag">Face: --</div>
+                <div class="modality-tag" id="audioTag">Audio: --</div>
+                <div class="modality-tag" id="fpsTag">FPS: --</div>
+                <div class="modality-tag" id="framesTag">Frames: --</div>
+            </div>
+            <div class="info-hint">Video label mirrors the Security Decision (multimodal, temporally smoothed) &middot; percentage shown is the visual-only risk.</div>
         </div>
 
-        <div class="card">
-            <div>Fused Threat Score (S_fusion)</div>
-            <div id="fusionScore" class="score-box">0.00</div>
-        </div>
+        <div class="sidebar">
+            <div class="panel">
+                <h3>Live Analysis</h3>
+                <div class="live-grid">
+                    <div class="live-row">Stream <span class="val" id="laStream">--</span></div>
+                    <div class="live-row">Face <span class="val" id="laFace">--</span></div>
+                    <div class="live-row">Audio <span class="val" id="laAudio">--</span></div>
+                    <div class="live-row">Visual Inference FPS <span class="val" id="laFps">--</span></div>
+                    <div class="live-row">Frames Analyzed <span class="val" id="laFrames">--</span></div>
+                    <div class="live-row">Last Update <span class="val" id="laTime">--</span></div>
+                </div>
+            </div>
 
-        <div class="card">
-            <div>Visual Risk Score (S_v)</div>
-            <div id="vScore">0.00</div>
-        </div>
+            <div class="panel">
+                <h3>Risk Signals &middot; Continuous Model Output</h3>
+                <div class="gauge">
+                    <div class="gauge-label">
+                        <span>Visual Manipulation Risk<span class="stale-tag" id="vStaleTag" style="display:none;">STALE</span></span>
+                        <span class="pct" id="vPct">--</span>
+                    </div>
+                    <div class="gauge-track"><div class="gauge-fill" id="vFill"></div></div>
+                </div>
+                <div class="gauge">
+                    <div class="gauge-label"><span>Audio Spoof Risk</span><span class="pct" id="aPct">--</span></div>
+                    <div class="gauge-track"><div class="gauge-fill" id="aFill"></div></div>
+                </div>
+                <div class="gauge">
+                    <div class="gauge-label"><span>Multimodal Risk (0.6 visual / 0.4 audio)</span><span class="pct" id="fPct">--</span></div>
+                    <div class="gauge-track"><div class="gauge-fill" id="fFill"></div></div>
+                </div>
+                <div class="info-hint" style="max-width: none;">Audio analysis is trained on speech spoofing data. Current live microphone input is not speech-gated, so environmental or out-of-distribution audio may produce elevated spoof-risk readings.</div>
+            </div>
 
-        <div class="card">
-            <div>Audio Risk Score (S_a)</div>
-            <div id="aScore">0.00</div>
+            <div class="panel status-card">
+                <h3 style="text-align:left;">Security Decision</h3>
+                <div id="statusBadge" class="status-badge NOSIGNAL">NO SIGNAL</div>
+                <ul class="evidence-list" id="evidenceList"></ul>
+            </div>
+
+            <div class="panel">
+                <h3>Event Timeline</h3>
+                <div class="timeline" id="timeline">
+                    <div class="timeline-empty">No events yet.</div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         const ws = new WebSocket("ws://" + location.host + "/ws/stream");
+
+        function fmt4(value) {
+            return (value === null || value === undefined) ? "--" : value.toFixed(4);
+        }
+        function pct(value) {
+            return (value === null || value === undefined) ? "--" : Math.round(value * 100) + "%";
+        }
+        function riskColor(value) {
+            if (value === null || value === undefined) return "#475569";
+            if (value >= 0.72) return "#ef4444";
+            if (value >= 0.50) return "#f59e0b";
+            return "#22c55e";
+        }
+        function setGauge(fillId, pctId, value) {
+            document.getElementById(fillId).style.width = (value === null || value === undefined) ? "0%" : (value * 100) + "%";
+            document.getElementById(fillId).style.background = riskColor(value);
+            document.getElementById(pctId).innerText = pct(value);
+        }
+        function statusClass(status) {
+            if (status === "CRITICAL") return "CRITICAL";
+            if (status === "SUSPICIOUS") return "SUSPICIOUS";
+            if (status === "NORMAL") return "NORMAL";
+            if (status === "ANALYZING") return "ANALYZING";
+            return "NOSIGNAL";
+        }
+        function statusIcon(status) {
+            if (status === "CRITICAL") return "✖ ";
+            if (status === "SUSPICIOUS") return "⚠ ";
+            if (status === "NORMAL") return "✓ ";
+            if (status === "ANALYZING") return "⟳ ";
+            return "● ";
+        }
+        function shortTime(iso) {
+            try { return new Date(iso).toLocaleTimeString(); } catch (e) { return iso; }
+        }
+
+        // Face-box overlay: purely positional (from data.bbox, in the
+        // original camera frame's pixel coordinates) + coloured/labelled
+        // from data.status -- the EXACT SAME value driving the Security
+        // Decision badge (via statusClass/statusIcon above, reused as-is).
+        // No independent REAL/FAKE threshold is computed here; this
+        // function only maps an already-authoritative status to a colour
+        // class and positions a box, nothing more.
+        function updateFaceBox(data) {
+            const wrap = document.querySelector(".video-frame-wrap");
+            const img = document.getElementById("videoFeed");
+            const box = document.getElementById("faceBox");
+            const label = document.getElementById("faceBoxLabel");
+            const noFace = document.getElementById("noFaceCaption");
+
+            if (!data.bbox || !data.frame_width || !data.frame_height || !img.clientWidth) {
+                box.style.display = "none";
+                noFace.style.display = (data.face_detected === false && data.status !== "NO SIGNAL"
+                    && !String(data.status || "").startsWith("ERROR")) ? "block" : "none";
+                return;
+            }
+            noFace.style.display = "none";
+
+            const scaleX = img.clientWidth / data.frame_width;
+            const scaleY = img.clientHeight / data.frame_height;
+            const [x, y, w, h] = data.bbox;
+
+            box.style.left = (x * scaleX) + "px";
+            box.style.top = (y * scaleY) + "px";
+            box.style.width = (w * scaleX) + "px";
+            box.style.height = (h * scaleY) + "px";
+            box.style.display = "block";
+            box.className = "face-box " + statusClass(data.status) + (data.bbox_holding ? " holding" : "");
+
+            const visualPct = pct(data.visual_display_score);
+            label.innerText = data.status + (visualPct !== "--" ? " " + visualPct : "");
+        }
+
+        function tick() {
+            document.getElementById("clock").innerText = new Date().toLocaleTimeString();
+        }
+        setInterval(tick, 1000);
+        tick();
+
+        ws.onopen = () => {
+            document.getElementById("streamPill").classList.remove("offline");
+            document.getElementById("streamPillText").innerText = "STREAM ACTIVE";
+        };
+        ws.onclose = () => {
+            document.getElementById("streamPill").classList.add("offline");
+            document.getElementById("streamPillText").innerText = "DISCONNECTED";
+        };
+
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            document.getElementById("videoFeed").src = data.frame;
-            document.getElementById("fusionScore").innerText = data.s_fusion;
-            document.getElementById("vScore").innerText = data.s_v;
-            document.getElementById("aScore").innerText = data.s_a;
 
-            const badge = document.getElementById("alertBadge");
-            badge.innerText = data.alert;
-            badge.className = "status-badge " + (data.alert === "CRITICAL" ? "CRITICAL" : "SAFE");
+            if (data.frame) {
+                document.getElementById("videoFeed").src = data.frame;
+            }
+            updateFaceBox(data);
+
+            // Risk gauges -- continuous, always reflect the raw/smoothed model
+            // output exactly as sent, regardless of the security decision below.
+            // This visual gauge is deliberately visual-only (visual_display_score),
+            // so it can still legitimately read differently than the face box/
+            // Security Decision when audio pulls the multimodal blend the other
+            // way -- see the "Visual model alone reads elevated..." evidence
+            // line the server sends when that happens.
+            setGauge("vFill", "vPct", data.visual_display_score);
+            setGauge("aFill", "aPct", data.audio_score);
+            setGauge("fFill", "fPct", data.fusion_score);
+            document.getElementById("vStaleTag").style.display = (data.visual_fresh === false) ? "inline" : "none";
+
+            // Live analysis panel
+            const faceOn = !!data.face_detected;
+            const audioOn = !!data.audio_available;
+            document.getElementById("laStream").innerText = "ACTIVE";
+            document.getElementById("laStream").className = "val yes";
+            document.getElementById("laFace").innerText = faceOn ? "DETECTED" : "NOT DETECTED";
+            document.getElementById("laFace").className = "val " + (faceOn ? "yes" : "no");
+            document.getElementById("laAudio").innerText = audioOn ? "ACTIVE" : "UNAVAILABLE";
+            document.getElementById("laAudio").className = "val " + (audioOn ? "yes" : "no");
+            document.getElementById("laFps").innerText = (data.fps !== undefined && data.fps !== null) ? data.fps.toFixed(1) : "--";
+            document.getElementById("laFrames").innerText = (data.frames_analyzed !== undefined) ? data.frames_analyzed : "--";
+            document.getElementById("laTime").innerText = shortTime(data.timestamp);
+
+            document.getElementById("faceTag").innerText = "Face: " + (faceOn ? "Detected" : "Not Detected");
+            document.getElementById("faceTag").className = "modality-tag " + (faceOn ? "on" : "off");
+            document.getElementById("audioTag").innerText = "Audio: " + (audioOn ? "Active" : "Unavailable");
+            document.getElementById("audioTag").className = "modality-tag " + (audioOn ? "on" : "off");
+            document.getElementById("fpsTag").innerText = "FPS: " + ((data.fps !== undefined && data.fps !== null) ? data.fps.toFixed(1) : "--");
+            document.getElementById("framesTag").innerText = "Frames: " + ((data.frames_analyzed !== undefined) ? data.frames_analyzed : "--");
+
+            // Security decision badge + evidence
+            const badge = document.getElementById("statusBadge");
+            badge.innerText = statusIcon(data.status) + data.status;
+            badge.className = "status-badge " + statusClass(data.status);
+
+            const evList = document.getElementById("evidenceList");
+            evList.innerHTML = "";
+            (data.evidence || []).forEach((e) => {
+                const li = document.createElement("li");
+                li.innerText = e;
+                evList.appendChild(li);
+            });
+
+            // Event timeline
+            const tl = document.getElementById("timeline");
+            const events = data.event_timeline || [];
+            if (events.length === 0) {
+                tl.innerHTML = '<div class="timeline-empty">No events yet.</div>';
+            } else {
+                tl.innerHTML = "";
+                events.forEach((ev) => {
+                    const div = document.createElement("div");
+                    div.className = "timeline-entry";
+                    div.innerHTML = '<span class="t-time">' + shortTime(ev.timestamp) + '</span>' + ev.message;
+                    tl.appendChild(div);
+                });
+            }
         };
     </script>
 </body>

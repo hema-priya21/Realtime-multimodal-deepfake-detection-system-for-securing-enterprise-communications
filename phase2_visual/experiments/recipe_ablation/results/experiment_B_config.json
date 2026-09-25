@@ -1,0 +1,14 @@
+{
+  "variant": "B",
+  "description": "Balanced sampler ONLY: sampler is the sole change vs. no augmentation beyond the light flip/rotation/ColorJitter that already existed in the codebase (dataset_pipeline/face_transforms.py). No RandomResizedCrop, no blur, no JPEG, no resolution-loss simulation.",
+  "seed": 42,
+  "batch_size": 32,
+  "max_epochs": 20,
+  "early_stop_patience": 5,
+  "learning_rate": 0.0001,
+  "weight_decay": 0.0001,
+  "optimizer": "Adam",
+  "scheduler": "CosineAnnealingLR",
+  "amp": true,
+  "transform_repr": "Compose(\n      Resize(size=[224, 224], interpolation=bilinear, antialias=True)\n      RandomHorizontalFlip(p=0.5)\n      RandomRotation(degrees=[-5.0, 5.0], interpolation=nearest, expand=False, fill=0)\n      ColorJitter(brightness=(0.8, 1.2), contrast=(0.8, 1.2), saturation=(0.9, 1.1))\n      ToImage()\n      ToDtype(scale=True)\n      Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)\n)"
+}

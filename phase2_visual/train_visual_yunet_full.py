@@ -1,3 +1,20 @@
+"""Isolated crop-distribution experiment: trains the SAME architecture and
+hyperparameters as train_visual.py's current recipe (MobileNetV3-Small,
+class-weighted CrossEntropyLoss, Adam, cosine LR schedule, weight decay),
+changing ONLY the training data source -- data/visual_processed_yunet_full/
+(YuNet, tight/no-margin crops, matching live inference exactly) instead of
+data/visual_processed/ (Haar + 15% margin, what the deployed visual_model.pth
+was trained on).
+
+This is a deliberate single-variable experiment (crop distribution) to test
+whether the train/live crop mismatch documented in the forensic investigation
+is a meaningful contributor to live false positives on real faces. It does
+NOT touch visual_model.pth, data/visual_processed/, or the subject-disjoint
+split CSVs -- those are read-only inputs here.
+
+Run as: python phase2_visual/train_visual_yunet_full.py
+"""
+
 import os
 import sys
 import time
@@ -15,29 +32,26 @@ from torchvision import datasets, models
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from dataset_pipeline.config import PROCESSED_ROOT
 from dataset_pipeline.face_transforms import train_transform, eval_transform
 
 # ============================================================
-# PROJECT PATHS
+# PROJECT PATHS -- the only deliberate difference from train_visual.py
 # ============================================================
 
-TRAIN_DIR = PROCESSED_ROOT / "train"
-VAL_DIR = PROCESSED_ROOT / "val"
+DATA_ROOT = PROJECT_ROOT / "data" / "visual_processed_yunet_full"
+TRAIN_DIR = DATA_ROOT / "train"
+VAL_DIR = DATA_ROOT / "val"
 
-# Experiment 2 (lower LR + cosine schedule + weight decay, diagnosed after
-# experiment 1's unstable val accuracy) writes to its own model file,
-# checkpoint subfolder, and TensorBoard subfolder so the baseline's
-# visual_model.pth and checkpoints/best_epoch2_valacc82.27.pth are never
-# touched. Promoting a new experiment's result to be "the" model is a
-# separate, explicit step, not an automatic side effect of running it.
-EXPERIMENT_NAME = "exp2_lr1e4_cosine_wd1e4"
-MODEL_PATH = PROJECT_ROOT / "phase2_visual" / f"visual_model_{EXPERIMENT_NAME}.pth"
+EXPERIMENT_NAME = "yunet_full"
+# Clearly separate from visual_model.pth, per task instructions.
+MODEL_PATH = PROJECT_ROOT / "phase2_visual" / "checkpoints" / "visual_model_yunet_full_best.pth"
 CHECKPOINT_DIR = PROJECT_ROOT / "phase2_visual" / "checkpoints" / EXPERIMENT_NAME
 TENSORBOARD_DIR = PROJECT_ROOT / "phase2_visual" / "runs" / EXPERIMENT_NAME
 
 # ============================================================
-# SETTINGS
+# SETTINGS -- identical to the current train_visual.py recipe (Experiment 2:
+# lower LR + cosine schedule + weight decay), so the crop distribution is
+# the only variable relative to the most recent known-good training config.
 # ============================================================
 
 BATCH_SIZE = 32
@@ -45,10 +59,6 @@ EPOCHS = 10
 LEARNING_RATE = 0.0001
 WEIGHT_DECAY = 0.0001
 NUM_WORKERS = min(4, os.cpu_count() or 0)
-
-# ============================================================
-# DEVICE & AMP CONFIGURATION
-# ============================================================
 
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
@@ -68,10 +78,9 @@ def format_time(seconds):
 def print_header():
     print()
     print("=" * 80)
-    print("     VISUAL DEEPFAKE DETECTION TRAINING (subject-disjoint splits)")
+    print("  VISUAL DEEPFAKE DETECTION TRAINING -- YuNet-crop experiment (isolated)")
     print("=" * 80)
     print("Training device :", DEVICE)
-
     if torch.cuda.is_available():
         print("GPU             :", GPU_NAME)
         total_memory = torch.cuda.get_device_properties(0).total_memory / (1024 ** 3)
@@ -80,11 +89,11 @@ def print_header():
     else:
         print("GPU             : Not detected")
         print("WARNING         : Training on CPU -- this will be slow")
-
     print()
     print("Experiment      :", EXPERIMENT_NAME)
     print("Train dataset   :", TRAIN_DIR)
     print("Val dataset     :", VAL_DIR)
+    print("Model output    :", MODEL_PATH)
     print("Batch size      :", BATCH_SIZE)
     print("Epochs          :", EPOCHS)
     print("Learning rate   :", LEARNING_RATE, "(CosineAnnealingLR, T_max=", EPOCHS, ")")
@@ -95,16 +104,12 @@ def print_header():
 def check_dataset(path, name):
     if not path.exists():
         print(f"\nERROR: {name} folder not found: {path}")
-        print("Run: python -m dataset_pipeline.extract_frames")
         raise SystemExit(1)
-
     real_count = sum(1 for _ in (path / "real").glob("*.jpg")) if (path / "real").exists() else 0
     fake_count = sum(1 for _ in (path / "fake").glob("*.jpg")) if (path / "fake").exists() else 0
-
     print(f"{name:5s} | real: {real_count:,} | fake: {fake_count:,} | total: {real_count + fake_count:,}")
-
     if real_count == 0 or fake_count == 0:
-        print(f"ERROR: {name} set is missing a class. Extraction may still be running.")
+        print(f"ERROR: {name} set is missing a class.")
         raise SystemExit(1)
 
 
@@ -173,7 +178,6 @@ def run_epoch(model, loader, criterion, optimizer, scaler, epoch, train):
     epoch_accuracy = correct / processed * 100
     print(f"  [{phase}] epoch {epoch} finished | loss {epoch_loss:.4f} | "
           f"accuracy {epoch_accuracy:.2f}% | time {format_time(epoch_time)} | GPU {gpu_memory()}")
-
     return epoch_loss, epoch_accuracy
 
 
@@ -186,14 +190,11 @@ def train_model():
     val_dataset = datasets.ImageFolder(root=str(VAL_DIR), transform=eval_transform)
 
     print("\nClass mapping:", train_dataset.class_to_idx)
+    assert train_dataset.class_to_idx == {"fake": 0, "real": 1}, \
+        "Class mapping must match the production convention (fake=0, real=1)"
     assert train_dataset.class_to_idx == val_dataset.class_to_idx, \
         "Train/val class-to-index mapping mismatch"
 
-    # Class-weighted loss: FF++ fakes outnumber reals ~6.7:1 in the
-    # subject-disjoint train split, so an unweighted loss would bias the
-    # model toward predicting "fake". Weights are derived from the actual
-    # train-set class counts (inverse frequency, sklearn's "balanced" rule),
-    # not hardcoded, so they stay correct if the dataset changes.
     class_counts = Counter(train_dataset.targets)
     num_classes = len(train_dataset.classes)
     total_samples = len(train_dataset)
@@ -222,6 +223,7 @@ def train_model():
     scaler = torch.amp.GradScaler("cuda", enabled=USE_AMP)
 
     CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+    MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     writer = SummaryWriter(log_dir=str(TENSORBOARD_DIR))
 
     best_val_accuracy = 0.0
@@ -233,13 +235,11 @@ def train_model():
 
     for epoch in range(1, EPOCHS + 1):
         print(f"\n--- Epoch {epoch}/{EPOCHS} ---")
-
         train_loss, train_acc = run_epoch(model, train_loader, criterion, optimizer, scaler, epoch, train=True)
         val_loss, val_acc = run_epoch(model, val_loader, criterion, optimizer, scaler, epoch, train=False)
 
         writer.add_scalars("loss", {"train": train_loss, "val": val_loss}, epoch)
         writer.add_scalars("accuracy", {"train": train_acc, "val": val_acc}, epoch)
-
         current_lr = optimizer.param_groups[0]["lr"]
         writer.add_scalar("lr", current_lr, epoch)
         scheduler.step()
@@ -262,11 +262,8 @@ def train_model():
     print(f"Best VAL accuracy : {best_val_accuracy:.2f}%")
     print(f"Total time        : {format_time(total_time)}")
     print(f"Model saved to    : {MODEL_PATH}")
-    print(f"TensorBoard logs  : {TENSORBOARD_DIR}  (run: tensorboard --logdir {TENSORBOARD_DIR})")
-    print()
-    print("NOTE: this is VAL accuracy on subject-disjoint data, not the final")
-    print("reported metric. Run evaluate_visual.py on the held-out TEST split")
-    print("(touched for the first time there) for the honest final numbers.")
+    print("=" * 80)
+    print("visual_model.pth (production baseline) was NOT touched by this run.")
     print("=" * 80)
 
 

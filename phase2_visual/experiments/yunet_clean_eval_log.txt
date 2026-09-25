@@ -1,0 +1,75 @@
+Class mapping   : {'fake': 0, 'real': 1}
+Test set        : C:\Users\kslok\OneDrive\Desktop\Realtime-multimodal-deepfake-detection-system-for-securing-enterprise-communications-main\data\visual_processed_yunet_full\test
+Test images     : 12,009
+Device          : cuda
+  64/12009  128/12009  192/12009  256/12009  320/12009  384/12009  448/12009  512/12009  576/12009  640/12009  704/12009  768/12009  832/12009  896/12009  960/12009  1024/12009  1088/12009  1152/12009  1216/12009  1280/12009  1344/12009  1408/12009  1472/12009  1536/12009  1600/12009  1664/12009  1728/12009  1792/12009  1856/12009  1920/12009  1984/12009  2048/12009  2112/12009  2176/12009  2240/12009  2304/12009  2368/12009  2432/12009  2496/12009  2560/12009  2624/12009  2688/12009  2752/12009  2816/12009  2880/12009  2944/12009  3008/12009  3072/12009  3136/12009  3200/12009  3264/12009  3328/12009  3392/12009  3456/12009  3520/12009  3584/12009  3648/12009  3712/12009  3776/12009  3840/12009  3904/12009  3968/12009  4032/12009  4096/12009  4160/12009  4224/12009  4288/12009  4352/12009  4416/12009  4480/12009  4544/12009  4608/12009  4672/12009  4736/12009  4800/12009  4864/12009  4928/12009  4992/12009  5056/12009  5120/12009  5184/12009  5248/12009  5312/12009  5376/12009  5440/12009  5504/12009  5568/12009  5632/12009  5696/12009  5760/12009  5824/12009  5888/12009  5952/12009  6016/12009  6080/12009  6144/12009  6208/12009  6272/12009  6336/12009  6400/12009  6464/12009  6528/12009  6592/12009  6656/12009  6720/12009  6784/12009  6848/12009  6912/12009  6976/12009  7040/12009  7104/12009  7168/12009  7232/12009  7296/12009  7360/12009  7424/12009  7488/12009  7552/12009  7616/12009  7680/12009  7744/12009  7808/12009  7872/12009  7936/12009  8000/12009  8064/12009  8128/12009  8192/12009  8256/12009  8320/12009  8384/12009  8448/12009  8512/12009  8576/12009  8640/12009  8704/12009  8768/12009  8832/12009  8896/12009  8960/12009  9024/12009  9088/12009  9152/12009  9216/12009  9280/12009  9344/12009  9408/12009  9472/12009  9536/12009  9600/12009  9664/12009  9728/12009  9792/12009  9856/12009  9920/12009  9984/12009  10048/12009  10112/12009  10176/12009  10240/12009  10304/12009  10368/12009  10432/12009  10496/12009  10560/12009  10624/12009  10688/12009  10752/12009  10816/12009  10880/12009  10944/12009  11008/12009  11072/12009  11136/12009  11200/12009  11264/12009  11328/12009  11392/12009  11456/12009  11520/12009  11584/12009  11648/12009  11712/12009  11776/12009  11840/12009  11904/12009  11968/12009  12009/12009
+
+METRIC                  NEW (yunet_clean)  BASELINE (production)       DIFF
+Accuracy                           91.21%                 82.52%     +8.69pp
+ROC-AUC                            95.67%                 88.21%     +7.46pp
+Fake precision                     96.15%                 93.28%     +2.87pp
+Fake recall                        93.17%                 85.12%     +8.05pp
+Fake F1                            94.64%                 89.01%     +5.63pp
+Real precision                     70.46%                 48.70%    +21.76pp
+Real recall                        81.37%                 69.73%    +11.64pp
+Real F1                            75.52%                 56.68%    +18.84pp
+Macro F1                           85.08%                 73.00%    +12.08pp
+Weighted F1                        91.45%                 84.00%     +7.45pp
+
+Confusion matrix [rows=actual, cols=predicted], order=[fake, real]:
+[[9324  683]
+ [ 373 1629]]
+              precision    recall  f1-score   support
+
+        fake       0.96      0.93      0.95     10007
+        real       0.70      0.81      0.76      2002
+
+    accuracy                           0.91     12009
+   macro avg       0.83      0.87      0.85     12009
+weighted avg       0.92      0.91      0.91     12009
+
+Prediction distribution across ALL 12009 test crops: predicted-fake=9697 (80.7%), predicted-real=2312 (19.3%)  (true distribution: fake=10007, real=2002)
+
+Crops matched back to a CSV video row: 12009/12009
+
+Real -> Fake crop-level false-positive rate: 373/2002 = 18.6%
+Number of real test identities classified as predominantly FAKE (video mean P(fake)>=0.5): 24 / 169
+Video/identity-level real-person false-positive rate: 14.2%
+   ffpp_original_835                   subj=ffpp_yt_835     mean_P(fake)=0.968
+   ffpp_original_957                   subj=ffpp_yt_957     mean_P(fake)=0.964
+   ffpp_original_807                   subj=ffpp_yt_807     mean_P(fake)=0.908
+   ffpp_original_556                   subj=ffpp_yt_556     mean_P(fake)=0.866
+   ffpp_original_107                   subj=ffpp_yt_107     mean_P(fake)=0.823
+   ffpp_original_887                   subj=ffpp_yt_887     mean_P(fake)=0.812
+   ffpp_original_056                   subj=ffpp_yt_056     mean_P(fake)=0.796
+   ffpp_original_752                   subj=ffpp_yt_752     mean_P(fake)=0.774
+   ffpp_original_841                   subj=ffpp_yt_841     mean_P(fake)=0.772
+   ffpp_original_160                   subj=ffpp_yt_160     mean_P(fake)=0.750
+   ffpp_original_772                   subj=ffpp_yt_772     mean_P(fake)=0.745
+   ffpp_original_570                   subj=ffpp_yt_570     mean_P(fake)=0.734
+   ffpp_original_863                   subj=ffpp_yt_863     mean_P(fake)=0.702
+   ffpp_original_012                   subj=ffpp_yt_012     mean_P(fake)=0.695
+   ffpp_original_635                   subj=ffpp_yt_635     mean_P(fake)=0.637
+
+==============================================================================
+SANITY CHECK -- diverse real + fake samples across identities/methods
+==============================================================================
+file                                          true  pred  P(fake)  P(real) 
+ffpp_original_000_frame00_face00.jpg          real  real    0.0032   0.9968
+ffpp_original_078_frame10_face00.jpg          real  real    0.0122   0.9878
+ffpp_original_207_frame11_face00.jpg          real  real    0.3605   0.6395
+ffpp_original_330_frame09_face00.jpg          real  real    0.0124   0.9876
+ffpp_original_543_frame07_face00.jpg          real  real    0.0034   0.9966
+ffpp_original_662_frame05_face00.jpg          real  real    0.2840   0.7160
+ffpp_original_789_frame03_face00.jpg          real  real    0.0007   0.9993
+ffpp_original_918_frame01_face00.jpg          real  real    0.0044   0.9956
+ffpp_Deepfakes_000_003_frame00_face00.jpg     fake  fake    1.0000   0.0000
+ffpp_Deepfakes_662_641_frame09_face00.jpg     fake  fake    0.6771   0.3229
+ffpp_Face2Face_207_908_frame11_face00.jpg     fake  fake    1.0000   0.0000
+ffpp_Face2Face_908_207_frame10_face00.jpg     fake  fake    1.0000   0.0000
+ffpp_FaceShifter_543_559_frame02_face00.jpg   fake  fake    0.9968   0.0032
+ffpp_FaceSwap_078_955_frame06_face00.jpg      fake  fake    1.0000   0.0000
+ffpp_FaceSwap_789_753_frame05_face00.jpg      fake  fake    1.0000   0.0000
+ffpp_NeuralTextures_330_162_frame09_face00.jpg fake  fake    0.6959   0.3041
+
+Wrote C:\Users\kslok\OneDrive\Desktop\Realtime-multimodal-deepfake-detection-system-for-securing-enterprise-communications-main\phase2_visual\experiments\yunet_clean_evaluation.json

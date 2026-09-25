@@ -1,0 +1,14 @@
+{
+  "variant": "A",
+  "description": "Baseline reproduction: balanced sampler + FULL existing yunet_clean augmentation (RandomResizedCrop + resolution-loss-sim + flip/rotation/ColorJitter + blur + JPEG). Verifies reproducibility of the existing checkpoint's training recipe.",
+  "seed": 42,
+  "batch_size": 32,
+  "max_epochs": 20,
+  "early_stop_patience": 5,
+  "learning_rate": 0.0001,
+  "weight_decay": 0.0001,
+  "optimizer": "Adam",
+  "scheduler": "CosineAnnealingLR",
+  "amp": true,
+  "transform_repr": "Compose(\n      Resize(size=[224, 224], interpolation=bilinear, antialias=True)\n      RandomResizedCrop(size=(224, 224), scale=(0.85, 1.0), ratio=(0.95, 1.05), interpolation=bilinear, antialias=True)\n      <function simulate_native_resolution_loss at 0x000000004ADD4510>\n      RandomHorizontalFlip(p=0.5)\n      RandomRotation(degrees=[-5.0, 5.0], interpolation=nearest, expand=False, fill=0)\n      ColorJitter(brightness=(0.8, 1.2), contrast=(0.8, 1.2), saturation=(0.9, 1.1))\n      RandomApply(    GaussianBlur(kernel_size=(3, 3), sigma=[0.1, 1.0]))\n      ToImage()\n      JPEG(quality=(40, 100))\n      ToDtype(scale=True)\n      Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], inplace=False)\n)"
+}

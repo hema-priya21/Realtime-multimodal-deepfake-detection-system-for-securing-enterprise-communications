@@ -7,6 +7,7 @@
 data/
 ff_raw/
 FaceForensics-master/
+dataset_pipeline/splits/*.csv
 
 # Environments & Caches
 env/
@@ -21,3 +22,6 @@ __pycache__/
 
 1m_faces_91__99/
 *.zip
+
+phase3_audio/features/
+*_tmp.txt

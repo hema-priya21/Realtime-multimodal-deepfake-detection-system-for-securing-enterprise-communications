@@ -1,0 +1,43 @@
+{
+  "model_path": "C:\\Users\\kslok\\OneDrive\\Desktop\\Realtime-multimodal-deepfake-detection-system-for-securing-enterprise-communications-main\\phase2_visual\\checkpoints\\visual_model_yunet_clean_best.pth",
+  "test_dir": "C:\\Users\\kslok\\OneDrive\\Desktop\\Realtime-multimodal-deepfake-detection-system-for-securing-enterprise-communications-main\\data\\visual_processed_yunet_full\\test",
+  "n_test_images": 12009,
+  "accuracy": 0.9120659505370972,
+  "roc_auc": 0.9566770792912493,
+  "fake_precision": 0.9615344952047025,
+  "fake_recall": 0.9317477765564105,
+  "fake_f1": 0.9464068209500609,
+  "real_precision": 0.7045847750865052,
+  "real_recall": 0.8136863136863137,
+  "real_f1": 0.7552155771905424,
+  "macro_f1": 0.8508111990703017,
+  "weighted_f1": 0.9145336533252332,
+  "confusion_matrix_fake_real_order": [
+    [
+      9324,
+      683
+    ],
+    [
+      373,
+      1629
+    ]
+  ],
+  "real_crop_false_positive_rate": 0.1863136863136863,
+  "real_crop_wrong": 373,
+  "real_crop_total": 2002,
+  "real_identity_false_positive_count": 24,
+  "real_identity_total": 169,
+  "real_identity_false_positive_rate": 0.14201183431952663,
+  "baseline": {
+    "accuracy": 0.8252,
+    "roc_auc": 0.8821,
+    "fake_precision": 0.9328,
+    "fake_recall": 0.8512,
+    "fake_f1": 0.8901,
+    "real_precision": 0.487,
+    "real_recall": 0.6973,
+    "real_f1": 0.5668,
+    "macro_f1": 0.73,
+    "weighted_f1": 0.84
+  }
+}
